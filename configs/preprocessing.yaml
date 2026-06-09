@@ -16,7 +16,7 @@ bad_channel_threshold: 0.75
 run_ica: true
 ica_n_components: 20
 ica_method: "fastica"
-eog_channel: "Fp1"
+eog_channel: "auto"
 
 # Epoching
 epoch_tmin: -0.2   # seconds before event
