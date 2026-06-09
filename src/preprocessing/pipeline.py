@@ -52,8 +52,38 @@ def run_preprocessing(raw: mne.io.Raw, config: dict, output_dir: str, subject_id
             random_state=42,
         )
         ica.fit(raw)
-        # Placeholder: auto-detect EOG/ECG components
-        qc["ica_components_excluded"] = []
+
+        # ---------- Automatic detection of eye movement / blink components ----------
+        # 1. Determine the channel to use for EOG detection
+        eog_channel = config.get("eog_channel")
+        if eog_channel == "auto" or eog_channel is None:
+            # Auto-select from common frontal electrodes
+            possible = ['Fp1', 'Fp2', 'Fpz', 'EOG', 'eog', 'VEOG', 'HEOG']
+            eog_channel = next((ch for ch in possible if ch in raw.ch_names), None)
+            if eog_channel:
+                logger.info(f"[{subject_id}] Auto-selected EOG channel: {eog_channel}")
+            else:
+                logger.warning(f"[{subject_id}] No suitable EOG channel found. ICA will not remove any components.")
+        
+        # 2. If a valid channel is found, detect and remove EOG components
+        if eog_channel and eog_channel in raw.ch_names:
+            # find_bads_eog returns (components_indices, scores)
+            eog_indices, _ = ica.find_bads_eog(raw, ch_name=eog_channel, threshold=3.0)
+            if len(eog_indices) == 0:
+                logger.info(f"[{subject_id}] No EOG-related components detected.")
+            else:
+                logger.info(f"[{subject_id}] Detected EOG components: {eog_indices}")
+            
+            # Set the components to be excluded
+            ica.exclude = eog_indices
+            qc["ica_components_excluded"] = eog_indices
+            
+            # 3. Apply ICA to reconstruct the signal (remove excluded components from raw)
+            ica.apply(raw)
+            logger.info(f"[{subject_id}] ICA applied. Removed components {eog_indices} from the signal.")
+        else:
+            qc["ica_components_excluded"] = []
+            logger.info(f"[{subject_id}] No valid EOG channel configured. Skipping component rejection.")
 
     # --- Windowing (resting-state) ---
     logger.info(f"[{subject_id}] Creating windows")
