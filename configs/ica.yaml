@@ -1,54 +1,26 @@
 # Independent Component Analysis (ICA) Configuration
-# for Physiological Artifact Rejection (Task 1 — Part D)
+# for Physiological Artifact Rejection (Task 1 — Student D)
 #
-# This config controls ICA-based detection and removal of eye blink,
-# eye movement, and muscle artifacts from EEG data.
+# This config controls ICA-based detection and removal of eye blink
+# and eye movement artifacts from EEG data.
 
-# ---- Core ICA settings ----
 ica:
   method: "fastica"           # ICA algorithm: "fastica", "picard", "infomax"
-  n_components: 20            # Number of components (null/omit = auto from data rank)
+  n_components: 20            # Number of components (null = auto from data rank)
   random_state: 42            # Random seed for reproducibility
   max_iter: 5000              # Maximum iterations for convergence
 
-# ---- EOG (eye) artifact detection ----
 eog_detection:
   # Detection strategy:
-  #   "correlation" — use MNE's find_bads_eog (requires EOG channel)
-  #   "kurtosis"    — use temporal kurtosis (no EOG channel needed)
-  #   "topography"  — use spatial focality + frontal weighting
+  #   "correlation" — MNE's find_bads_eog (requires EOG channel)
+  #   "kurtosis"    — temporal kurtosis (no EOG channel needed)
+  #   "topography"  — spatial focality + frontal weighting
   #   "combined"    — vote-based consensus of all three methods
   method: "combined"
 
   eog_channel: "auto"         # "auto" = auto-detect, or specify e.g. "VEOG"
-                              # Set to null/empty to skip correlation method
 
   # Thresholds (higher = more conservative, fewer components removed)
-  correlation_threshold: 3.0  # Z-score for EOG correlation (MNE default)
+  correlation_threshold: 3.0  # Z-score for EOG correlation
   kurtosis_threshold: 3.0     # Z-score for temporal kurtosis
   focal_threshold: 0.75       # Minimum spatial focality score (0–1)
-
-# ---- Muscle artifact detection ----
-muscle_detection:
-  enabled: true               # Enable muscle artifact detection
-  threshold: 0.6              # High-frequency power ratio threshold (0–1)
-
-# ---- Component classification ----
-classification:
-  # Frontal channels used for topographic scoring.
-  # These cover the standard 10-10 frontal electrodes most affected by eye artifacts.
-  frontal_channels:
-    - Fp1
-    - Fp2
-    - Fpz
-    - AF3
-    - AF4
-    - AF7
-    - AF8
-  frontal_power_threshold: 0.5   # Minimum ratio of power in frontal channels (0–1)
-
-# ---- Output settings ----
-output:
-  save_plots: true            # Generate diagnostic plots
-  save_qc: true               # Save QC metrics as CSV
-  overwrite: false            # Overwrite existing output files
