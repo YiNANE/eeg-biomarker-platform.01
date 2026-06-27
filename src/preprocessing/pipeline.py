@@ -6,6 +6,21 @@ from ..utils.logging import get_logger
 
 logger = get_logger(__name__)
 
+# set 10-5 montege
+montage = mne.channels.make_standard_montage('standard_1005')
+raw.set_montage(montage, match_case=False)
+
+# bad channel auto check
+data, _ = raw[:, :]
+ch_std = np.std(data, axis=1)
+mean_std = np.mean(ch_std)
+std_threshold = mean_std + 3 * np.std(ch_std)
+bad_channels_idx = np.where(ch_std > std_threshold)[0]
+raw.info['bads'] = [raw.ch_names[i] for i in bad_channels_idx]
+
+# 
+if raw.info['bads']:
+    raw.interpolate_bads(reset_bads=True, method='sphere')  
 
 def run_preprocessing(raw: mne.io.Raw, config: dict, output_dir: str, subject_id: str) -> dict:
     """
